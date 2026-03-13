@@ -91,13 +91,13 @@ CREATE TABLE urgence_signalement (
 CREATE TABLE signalement (
     id INT PRIMARY KEY,
     date DATE,
-    signale_par INT,
+    fk_personne INT,
     objet VARCHAR(255),
     description TEXT,
     fk_urgence_signalement INT,
     fk_statut_signalement INT,
     CONSTRAINT fk_signalement_personne
-        FOREIGN KEY (signale_par) REFERENCES personne(id),
+        FOREIGN KEY (fk_personne) REFERENCES personne(id),
     CONSTRAINT fk_signalement_urgence
         FOREIGN KEY (fk_urgence_signalement) REFERENCES urgence_signalement(id),
     CONSTRAINT fk_signalement_statut
