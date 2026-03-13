@@ -1,16 +1,17 @@
 services:
   db:
-    image: postgis/postgis:16-3.4
+    image: postgres:16
     
     container_name: service-bancs-yvedon
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: service_bancs
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: museum
     ports:
-      - "5438:5432"
+            - "5437:5432"
     volumes:
       - ./initdb:/docker-entrypoint-initdb.d
       - ./data:/data
 volumes:
   vaud_db_data:
+restart: unless-stopped
