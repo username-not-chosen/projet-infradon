@@ -12,6 +12,3 @@ services:
     volumes:
       - ./initdb:/docker-entrypoint-initdb.d
       - ./data:/data
-volumes:
-  vaud_db_data:
-restart: unless-stopped
