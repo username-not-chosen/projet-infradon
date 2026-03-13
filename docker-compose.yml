@@ -10,7 +10,7 @@ services:
     ports:
       - "5438:5432"
     volumes:
-      - vaud_db_data:/var/lib/postgresql/data
       - ./initdb:/docker-entrypoint-initdb.d
+      - ./data:/data
 volumes:
   vaud_db_data:
