@@ -1,5 +1,5 @@
 CREATE TABLE personne (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     nom VARCHAR(100),
     prenom VARCHAR(100),
     age INT,
@@ -8,12 +8,12 @@ CREATE TABLE personne (
 );
 
 CREATE TABLE technicien_profession (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     libelle VARCHAR(100) UNIQUE NOT NULL
 );
 
 CREATE TABLE technicien (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     fk_personne INT,
     fk_technicien_profession INT,
     CONSTRAINT fk_technicien_personne
@@ -23,12 +23,12 @@ CREATE TABLE technicien (
 );
 
 CREATE TABLE type_intervention (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     libelle VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE intervention (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     date DATE,
     objet VARCHAR(255),
     fk_type_intervention INT,
@@ -43,12 +43,12 @@ CREATE TABLE intervention (
 );
 
 CREATE TABLE type_mobilier (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     libelle VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE materiaux_mobilier (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     libelle VARCHAR(100) NOT NULL
 );
 
@@ -58,7 +58,7 @@ CREATE TABLE etat_mobilier (
 );
 
 CREATE TABLE inventaire_mobilier (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     fk_type_mobilier INT,
     fk_materiaux_mobilier INT,
     lieu VARCHAR(255),
@@ -79,17 +79,17 @@ CREATE TABLE inventaire_mobilier (
 );
 
 CREATE TABLE statut_signalement (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     libelle VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE urgence_signalement (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     libelle VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE signalement (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     date DATE,
     fk_personne INT,
     objet VARCHAR(255),
@@ -105,7 +105,7 @@ CREATE TABLE signalement (
 );
 
 CREATE TABLE intervention_signalement (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     fk_intervention INT,
     fk_signalement INT,
     CONSTRAINT fk_intervention_signalement_intervention
@@ -115,7 +115,7 @@ CREATE TABLE intervention_signalement (
 );
 
 CREATE TABLE inventaire_mobilier_signalement (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     fk_inventaire_mobilier INT,
     fk_signalement INT,
     CONSTRAINT fk_inv_mob_signalement_inventaire
@@ -125,7 +125,7 @@ CREATE TABLE inventaire_mobilier_signalement (
 );
 
 CREATE TABLE inventaire_mobilier_intervention (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     fk_inventaire_mobilier INT,
     fk_intervention INT,
     CONSTRAINT fk_inv_mob_intervention_inventaire
@@ -135,12 +135,12 @@ CREATE TABLE inventaire_mobilier_intervention (
 );
 
 CREATE TABLE type_materiel (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     libelle VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE fournisseur (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     entreprise VARCHAR(255),
     fk_type_materiel INT,
     remarque TEXT,
