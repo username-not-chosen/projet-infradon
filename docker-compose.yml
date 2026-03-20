@@ -10,5 +10,6 @@ services:
     ports:
             - "5437:5432"
     volumes:
+      - ./data:/data    
       - ./initdb:/docker-entrypoint-initdb.d
-      - ./data:/data
+

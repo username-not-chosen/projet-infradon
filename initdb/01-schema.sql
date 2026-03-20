@@ -1,3 +1,4 @@
+-- Active: 1773398591614@@0.0.0.0@5437@postgres
 CREATE TABLE personne (
     id SERIAL PRIMARY KEY,
     nom VARCHAR(100),
