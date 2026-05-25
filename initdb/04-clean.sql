@@ -2,9 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
 
--- ============================================================
 -- INVENTAIRE MOBILIER
--- ============================================================
 
 SELECT DISTINCT public.unaccent(LOWER(TRIM("type")))
 FROM staging.inventaire_mobilier
@@ -82,9 +80,7 @@ WHERE
     OR materiau IS NOT NULL;
 
 
--- ============================================================
 -- INTERVENTIONS
--- ============================================================
 
 SELECT DISTINCT public.unaccent(LOWER(TRIM(type_intervention)))
 FROM staging.interventions
@@ -201,9 +197,7 @@ WHERE
     OR type_intervention IS NOT NULL;
 
 
--- ============================================================
 -- FOURNISSEURS CONTACTS
--- ============================================================
 
 SELECT DISTINCT public.unaccent(LOWER(TRIM(telephone)))
 FROM staging.fournisseurs_contacts
@@ -247,9 +241,7 @@ SELECT
 FROM staging.fournisseurs_contacts;
 
 
--- ============================================================
 -- SIGNALEMENTS
--- ============================================================
 
 SELECT DISTINCT LOWER(TRIM(urgence))
 FROM staging.signalements
@@ -299,12 +291,9 @@ WHERE
     OR objet IS NOT NULL;
 
 
--- ============================================================
--- INSERT INTO PRODUCTION
--- (décommenter après validation des SELECT ci-dessus)
--- ============================================================
+-- INSERT INTO
 
---- Étape 1 : référentiels ---
+-- Étape 1 : référentiels
 
 INSERT INTO type_mobilier (libelle)
 SELECT DISTINCT
@@ -385,7 +374,7 @@ FROM staging.fournisseurs_contacts
 WHERE type_materiel IS NOT NULL
 ON CONFLICT (libelle) DO NOTHING;
 
---- Étape 2 : personnes ---
+-- Étape 2 : personnes
 
 INSERT INTO personne (nom, prenom)
 SELECT DISTINCT
@@ -431,7 +420,7 @@ FROM staging.fournisseurs_contacts
 WHERE contact IS NOT NULL
 ON CONFLICT DO NOTHING;
 
---- Étape 3 : techniciens ---
+-- Étape 3 : techniciens
 
 INSERT INTO technicien_profession (libelle) VALUES
     ('technicien de voirie')
@@ -465,7 +454,7 @@ JOIN technicien_profession tp ON tp.libelle = 'technicien de voirie'
 WHERE i.technicien IS NOT NULL
 ON CONFLICT DO NOTHING;
 
---- Étape 4 : inventaire mobilier ---
+-- Étape 4 : inventaire mobilier
 
 INSERT INTO inventaire_mobilier (
     fk_type_mobilier,
@@ -536,7 +525,7 @@ LEFT JOIN etat_mobilier em ON em.libelle = CASE
     ELSE NULL END
 WHERE s.type IS NOT NULL;
 
---- Étape 5 : interventions ---
+-- Étape 5 : interventions
 
 INSERT INTO intervention (
     date,
@@ -622,7 +611,7 @@ LEFT JOIN personne p
     , ' ', 2))
 WHERE i.date IS NOT NULL;
 
---- Étape 6 : fournisseurs ---
+-- Étape 6 : fournisseurs
 
 INSERT INTO fournisseur (
     entreprise,
@@ -642,7 +631,7 @@ LEFT JOIN personne p
     ON p.nom = NULLIF(TRIM(f.contact), '')
 WHERE f.entreprise IS NOT NULL;
 
---- Étape 7 : signalements ---
+--Étape 7 : signalements
 
 INSERT INTO signalement (
     date,
@@ -676,9 +665,8 @@ LEFT JOIN statut_signalement s ON s.libelle = CASE
 WHERE sg.date IS NOT NULL;
 
 
--- ============================================================
 -- VÉRIFICATIONS FINALES
--- ============================================================
+
 
 SELECT COUNT(*) FROM staging.inventaire_mobilier;
 SELECT COUNT(*) FROM inventaire_mobilier;    -- ~120
