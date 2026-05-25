@@ -1,4 +1,4 @@
--- Active: 1773398619980@@127.0.0.1@5437@service-bancs-yvedon
+
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
 
