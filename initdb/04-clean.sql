@@ -1,8 +1,13 @@
--- sdasdasdas
+-- Active: 1773398619980@@127.0.0.1@5437@service-bancs-yvedon
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
-SELECT DISTINCT unaccent(LOWER(TRIM(type)))
-FROM inventaire_mobilier
+
+-- ============================================================
+-- INVENTAIRE MOBILIER
+-- ============================================================
+
+SELECT DISTINCT public.unaccent(LOWER(TRIM("type")))
+FROM staging.inventaire_mobilier
 WHERE type IS NOT NULL;
 
 SELECT
@@ -12,25 +17,25 @@ SELECT
     etat,
     date_installation,
     CASE
-        WHEN unaccent (LOWER(TRIM(type))) LIKE '%banc%' THEN 'banc'
-        WHEN unaccent (LOWER(TRIM(type))) LIKE '%lampadaire%' THEN 'lampadaire'
-        WHEN unaccent (LOWER(TRIM(type))) LIKE '%poubelle%' THEN 'poubelle'
-        WHEN unaccent (LOWER(TRIM(type))) LIKE '%corbeille%' THEN 'poubelle'
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%banc%' THEN 'banc'
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%lampadaire%' THEN 'lampadaire'
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%poubelle%' THEN 'poubelle'
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%corbeille%' THEN 'poubelle'
         ELSE NULL
     END AS type_normalise,
     CASE
-        WHEN unaccent (LOWER(TRIM(materiau))) LIKE '%metal%' THEN 'metal'
-        WHEN unaccent (LOWER(TRIM(materiau))) LIKE '%bois%' THEN 'bois'
-        WHEN unaccent (LOWER(TRIM(materiau))) LIKE '%sodium%' THEN 'sodium'
-        WHEN unaccent (LOWER(TRIM(materiau))) LIKE '%beton%' THEN 'beton'
-        WHEN unaccent (LOWER(TRIM(materiau))) LIKE '%pierre%' THEN 'pierre'
-        WHEN unaccent (LOWER(TRIM(materiau))) LIKE '%led%' THEN 'led'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%metal%' THEN 'metal'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%bois%' THEN 'bois'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%sodium%' THEN 'sodium'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%beton%' THEN 'beton'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%pierre%' THEN 'pierre'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%led%' THEN 'led'
         ELSE NULL
     END AS materiau_normalise,
     CASE
-        WHEN unaccent (LOWER(TRIM(etat))) LIKE '%remplacer%' THEN 'a remplacer'
-        WHEN unaccent (LOWER(TRIM(etat))) LIKE '%bon%' THEN 'bon'
-        WHEN unaccent (LOWER(TRIM(etat))) LIKE '%use%' THEN 'use'
+        WHEN public.unaccent (LOWER(TRIM(etat))) LIKE '%remplacer%' THEN 'a remplacer'
+        WHEN public.unaccent (LOWER(TRIM(etat))) LIKE '%bon%' THEN 'bon'
+        WHEN public.unaccent (LOWER(TRIM(etat))) LIKE '%use%' THEN 'use'
         ELSE NULL
     END AS etat_normalise,
     CASE
@@ -70,15 +75,41 @@ SELECT
         )
         WHEN date_installation ~ '^\d{5}$' THEN DATE '1899-12-30' + date_installation::int
         ELSE NULL
-    END AS date_installation
-FROM inventaire_mobilier
+    END AS date_installation_normalisee
+FROM staging.inventaire_mobilier
 WHERE
     type IS NOT NULL
     OR materiau IS NOT NULL;
 
 
+-- ============================================================
+-- INTERVENTIONS
+-- ============================================================
+
+SELECT DISTINCT public.unaccent(LOWER(TRIM(type_intervention)))
+FROM staging.interventions
+WHERE type_intervention IS NOT NULL;
+
+SELECT DISTINCT public.unaccent(LOWER(TRIM(technicien)))
+FROM staging.interventions
+WHERE technicien IS NOT NULL;
+
+SELECT DISTINCT public.unaccent(LOWER(TRIM(duree)))
+FROM staging.interventions
+WHERE duree IS NOT NULL;
+
+SELECT DISTINCT public.unaccent(LOWER(TRIM(cout_materiel)))
+FROM staging.interventions
+WHERE cout_materiel IS NOT NULL;
+
 SELECT
     date,
+    objet,
+    type_intervention,
+    technicien,
+    duree,
+    cout_materiel,
+    remarques,
     CASE
         WHEN date ~ '^\d{4}$' THEN TO_DATE(
             '01.01.' || date,
@@ -116,281 +147,547 @@ SELECT
         )
         WHEN date ~ '^\d{5}$' THEN DATE '1899-12-30' + date::int
         ELSE NULL
-    END AS date
-FROM interventions
+    END AS date_normalisee,
+    INITCAP(LOWER(TRIM(objet))) AS objet_normalise,
+    CASE
+        WHEN LOWER(TRIM(type_intervention)) IN ('réparation', 'reparation') THEN 'réparation'
+        WHEN LOWER(TRIM(type_intervention)) IN ('réparation électrique', 'reparation electrique') THEN 'réparation électrique'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement ampoule' THEN 'remplacement ampoule'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement complet' THEN 'remplacement complet'
+        WHEN LOWER(TRIM(type_intervention)) = 'redressage mât' THEN 'redressage mât'
+        WHEN LOWER(TRIM(type_intervention)) = 'nettoyage' THEN 'nettoyage'
+        WHEN LOWER(TRIM(type_intervention)) = 'nettoyage tags' THEN 'nettoyage tags'
+        WHEN LOWER(TRIM(type_intervention)) = 'peinture' THEN 'peinture'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement latte' THEN 'remplacement latte'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement couvercle' THEN 'remplacement couvercle'
+        WHEN LOWER(TRIM(type_intervention)) = 'réparation fuite' THEN 'réparation fuite'
+        WHEN LOWER(TRIM(type_intervention)) = 'remise en service' THEN 'remise en service'
+        WHEN LOWER(TRIM(type_intervention)) = 'hivernage' THEN 'hivernage'
+        WHEN LOWER(TRIM(type_intervention)) = 'détartrage' THEN 'détartrage'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement pompe' THEN 'remplacement pompe'
+        WHEN LOWER(TRIM(type_intervention)) = 'mise à jour logiciel' THEN 'mise à jour logiciel'
+        ELSE LOWER(TRIM(type_intervention))
+    END AS type_intervention_normalise,
+    CASE
+        WHEN LOWER(TRIM(technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin')
+            THEN 'Jean-Marc Bonvin'
+        WHEN LOWER(TRIM(technicien)) IN ('pedro', 'alves pedro', 'p. alves')
+            THEN 'Pedro Alves'
+        WHEN LOWER(TRIM(technicien)) = 'koffi marc'
+            THEN 'Koffi Marc'
+        WHEN LOWER(TRIM(technicien)) = 'stagiaire'
+            THEN 'Stagiaire'
+        ELSE NULL
+    END AS technicien_normalise,
+    CASE
+        WHEN LOWER(TRIM(duree)) = '30 min' THEN 30
+        WHEN LOWER(TRIM(duree)) = '1h' THEN 60
+        WHEN LOWER(TRIM(duree)) = '1h30' THEN 90
+        WHEN LOWER(TRIM(duree)) = '2h' THEN 120
+        WHEN LOWER(TRIM(duree)) = '3h' THEN 180
+        WHEN LOWER(TRIM(duree)) = 'une matinée' THEN 240
+        WHEN LOWER(TRIM(duree)) = 'une journée' THEN 480
+        ELSE NULL
+    END AS duree_minutes,
+    CASE
+        WHEN NULLIF(TRIM(cout_materiel), '') IS NULL THEN NULL
+        WHEN LOWER(TRIM(cout_materiel)) IN ('garantie', 'gratuit') THEN 0
+        ELSE NULLIF(REGEXP_REPLACE(cout_materiel, '[^0-9]', '', 'g'), '')::INTEGER
+    END AS cout_materiel_chf,
+    NULLIF(TRIM(remarques), '') AS remarques_normalisees
+FROM staging.interventions
 WHERE
-    date IS NOT NULL;
+    date IS NOT NULL
+    OR type_intervention IS NOT NULL;
 
--- DROP VIEW IF EXISTS staging.v_inventaire_mobilier_nettoye;
 
--- CREATE VIEW staging.v_inventaire_mobilier_nettoye AS
--- WITH inventaire_nettoye AS (
---     SELECT
---         TRIM(id) AS id_brut,
+-- ============================================================
+-- FOURNISSEURS CONTACTS
+-- ============================================================
 
---         CASE
---             WHEN LOWER(TRIM(type)) IN ('banc', 'banc public') THEN 'banc'
---             WHEN LOWER(TRIM(type)) IN ('lampadaire', 'lampadaire sodium') THEN 'lampadaire'
---             WHEN LOWER(TRIM(type)) = 'lampadaire led' THEN 'lampadaire_led'
---             WHEN LOWER(TRIM(type)) IN ('poubelle', 'corbeille') THEN 'poubelle'
---             WHEN LOWER(TRIM(type)) = 'poubelle tri' THEN 'poubelle_tri'
---             WHEN LOWER(TRIM(type)) IN ('fontaine', 'fontaine publique') THEN 'fontaine'
---             WHEN LOWER(TRIM(type)) IN ('borne ev', 'borne recharge', 'borne recharge ev') THEN 'borne_ev'
---             WHEN LOWER(TRIM(type)) IN ('panneau', 'panneau info', 'panneau affichage') THEN 'panneau'
---             ELSE LOWER(TRIM(type))
---         END AS type_normalise,
+SELECT DISTINCT public.unaccent(LOWER(TRIM(telephone)))
+FROM staging.fournisseurs_contacts
+WHERE telephone IS NOT NULL;
 
---         CASE
---             WHEN LOWER(TRIM(materiau)) IN ('metal', 'métal') THEN 'métal'
---             WHEN LOWER(TRIM(materiau)) = 'bois' THEN 'bois'
---             WHEN LOWER(TRIM(materiau)) = 'pierre' THEN 'pierre'
---             WHEN LOWER(TRIM(materiau)) = 'béton' THEN 'béton'
---             WHEN LOWER(TRIM(materiau)) = 'led' THEN 'led'
---             WHEN NULLIF(TRIM(materiau), '') IS NULL THEN NULL
---             ELSE LOWER(TRIM(materiau))
---         END AS materiau_normalise,
+SELECT DISTINCT public.unaccent(LOWER(TRIM(email)))
+FROM staging.fournisseurs_contacts
+WHERE email IS NOT NULL;
 
---         INITCAP(LOWER(TRIM(lieu))) AS lieu_normalise,
+SELECT DISTINCT LOWER(TRIM(type_materiel))
+FROM staging.fournisseurs_contacts
+WHERE type_materiel IS NOT NULL;
 
---         CASE
---             WHEN NULLIF(TRIM(latitude), '') IS NULL THEN NULL
---             WHEN TRIM(latitude) ~ '^-?[0-9]+([.,][0-9]+)?$'
---                 THEN REPLACE(TRIM(latitude), ',', '.')::NUMERIC(9,6)
---             ELSE NULL
---         END AS latitude,
+SELECT
+    entreprise,
+    contact,
+    telephone,
+    email,
+    type_materiel,
+    remarques,
+    INITCAP(TRIM(entreprise)) AS entreprise_normalise,
+    NULLIF(TRIM(contact), '') AS contact_normalise,
+    CASE
+        WHEN telephone IS NULL THEN NULL
+        WHEN TRIM(telephone) = '#ERROR!' THEN NULL
+        ELSE NULLIF(REGEXP_REPLACE(telephone, '[^0-9+]', '', 'g'), '')
+    END AS telephone_normalise,
+    CASE
+        WHEN email IS NULL THEN NULL
+        WHEN NULLIF(TRIM(email), '') IS NULL THEN NULL
+        WHEN LOWER(TRIM(email)) = 'voir site web' THEN NULL
+        WHEN POSITION('@' IN email) > 1 THEN LOWER(TRIM(email))
+        ELSE NULL
+    END AS email_normalise,
+    LOWER(TRIM(type_materiel)) AS type_materiel_normalise,
+    NULLIF(TRIM(remarques), '') AS remarques_normalisees,
+    CASE
+        WHEN public.unaccent (LOWER(COALESCE(remarques, ''))) LIKE '%ferme%' THEN FALSE
+        ELSE TRUE
+    END AS actif
+FROM staging.fournisseurs_contacts;
 
---         CASE
---             WHEN NULLIF(TRIM(longitude), '') IS NULL THEN NULL
---             WHEN TRIM(longitude) ~ '^-?[0-9]+([.,][0-9]+)?$'
---                 THEN REPLACE(TRIM(longitude), ',', '.')::NUMERIC(9,6)
---             ELSE NULL
---         END AS longitude,
 
---         CASE
---             WHEN date_installation ~ '^\d{2}\.\d{2}\.\d{4}$'
---                 THEN TO_DATE(date_installation, 'DD.MM.YYYY')
---             WHEN date_installation ~ '^\d{4}-\d{2}-\d{2}$'
---                 THEN TO_DATE(date_installation, 'YYYY-MM-DD')
---             WHEN date_installation ~ '^\d{4}$'
---                 THEN TO_DATE(date_installation || '-01-01', 'YYYY-MM-DD')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'janvier %'
---                 THEN TO_DATE('01.01.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'février %'
---                 THEN TO_DATE('01.02.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'mars %'
---                 THEN TO_DATE('01.03.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'avril %'
---                 THEN TO_DATE('01.04.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'mai %'
---                 THEN TO_DATE('01.05.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'juin %'
---                 THEN TO_DATE('01.06.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'juillet %'
---                 THEN TO_DATE('01.07.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'août %'
---                 THEN TO_DATE('01.08.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'septembre %'
---                 THEN TO_DATE('01.09.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'octobre %'
---                 THEN TO_DATE('01.10.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'novembre %'
---                 THEN TO_DATE('01.11.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN LOWER(TRIM(date_installation)) LIKE 'décembre %'
---                 THEN TO_DATE('01.12.' || RIGHT(TRIM(date_installation), 4), 'DD.MM.YYYY')
---             WHEN TRIM(date_installation) ~ '^\d{5}$'
---                 THEN DATE '1899-12-30' + TRIM(date_installation)::INTEGER
---             ELSE NULL
---         END AS date_installation_normalisee,
+-- ============================================================
+-- SIGNALEMENTS
+-- ============================================================
 
---         CASE
---             WHEN LOWER(TRIM(etat)) IN ('bon', 'usé', 'à remplacer') THEN LOWER(TRIM(etat))
---             ELSE NULL
---         END AS etat_normalise,
+SELECT DISTINCT LOWER(TRIM(urgence))
+FROM staging.signalements
+WHERE urgence IS NOT NULL;
 
---         NULLIF(TRIM(remarques), '') AS remarques
---     FROM staging.inventaire_mobilier
--- ),
--- inventaire_dedoublonne AS (
---     SELECT *,
---            ROW_NUMBER() OVER (
---                PARTITION BY LOWER(TRIM(id_brut))
---                ORDER BY id_brut
---            ) AS rn
---     FROM inventaire_nettoye
--- )
--- SELECT
---     id_brut,
---     type_normalise,
---     materiau_normalise,
---     lieu_normalise,
---     latitude,
---     longitude,
---     date_installation_normalisee,
---     etat_normalise,
---     remarques
--- FROM inventaire_dedoublonne
--- WHERE rn = 1;
+SELECT DISTINCT LOWER(TRIM(statut))
+FROM staging.signalements
+WHERE statut IS NOT NULL;
 
--- DROP VIEW IF EXISTS staging.v_fournisseurs_contacts_nettoyes;
+SELECT
+    date,
+    signale_par,
+    objet,
+    description,
+    urgence,
+    statut,
+    CASE
+        WHEN date ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(
+            date,
+            'YYYY-MM-DD'
+        )
+        WHEN date ~ '^\d{2}\.\d{2}\.\d{4}$' THEN TO_DATE(
+            date,
+            'DD.MM.YYYY'
+        )
+        ELSE NULL
+    END AS date_normalisee,
+    NULLIF(TRIM(signale_par), '') AS signale_par_normalise,
+    INITCAP(LOWER(TRIM(objet))) AS objet_normalise,
+    NULLIF(TRIM(description), '') AS description_normalisee,
+    CASE
+        WHEN LOWER(TRIM(urgence)) = 'urgent' THEN 'urgent'
+        WHEN LOWER(TRIM(urgence)) = 'normal' THEN 'normal'
+        WHEN NULLIF(TRIM(urgence), '') IS NULL THEN 'normal'
+        ELSE NULL
+    END AS urgence_normalisee,
+    CASE
+        WHEN LOWER(TRIM(statut)) = 'fait' THEN 'fait'
+        WHEN LOWER(TRIM(statut)) = 'en attente' THEN 'en attente'
+        WHEN LOWER(TRIM(statut)) = 'en cours' THEN 'en cours'
+        WHEN NULLIF(TRIM(statut), '') IS NULL THEN 'nouveau'
+        ELSE NULL
+    END AS statut_normalise
+FROM staging.signalements
+WHERE
+    date IS NOT NULL
+    OR objet IS NOT NULL;
 
--- CREATE VIEW staging.v_fournisseurs_contacts_nettoyes AS
--- SELECT
---     INITCAP(TRIM(entreprise)) AS entreprise,
 
---     NULLIF(TRIM(contact), '') AS contact,
+-- ============================================================
+-- INSERT INTO PRODUCTION
+-- (décommenter après validation des SELECT ci-dessus)
+-- ============================================================
 
---     CASE
---         WHEN telephone IS NULL THEN NULL
---         WHEN TRIM(telephone) = '#ERROR!' THEN NULL
---         ELSE NULLIF(REGEXP_REPLACE(telephone, '[^0-9+]', '', 'g'), '')
---     END AS telephone_normalise,
+--- Étape 1 : référentiels ---
 
---     CASE
---         WHEN email IS NULL THEN NULL
---         WHEN NULLIF(TRIM(email), '') IS NULL THEN NULL
---         WHEN LOWER(TRIM(email)) = 'voir site web' THEN NULL
---         WHEN POSITION('@' IN email) > 1 THEN LOWER(TRIM(email))
---         ELSE NULL
---     END AS email_normalise,
+INSERT INTO type_mobilier (libelle)
+SELECT DISTINCT
+    CASE
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%banc%' THEN 'banc'
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%lampadaire%' THEN 'lampadaire'
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%poubelle%' THEN 'poubelle'
+        WHEN public.unaccent (LOWER(TRIM("type"))) LIKE '%corbeille%' THEN 'poubelle'
+        ELSE NULL
+    END
+FROM staging.inventaire_mobilier
+WHERE type IS NOT NULL
+    AND public.unaccent (LOWER(TRIM("type"))) LIKE ANY (ARRAY['%banc%', '%lampadaire%', '%poubelle%', '%corbeille%'])
+ON CONFLICT (libelle) DO NOTHING;
 
---     LOWER(TRIM(type_materiel)) AS type_materiel_normalise,
+INSERT INTO materiaux_mobilier (libelle)
+SELECT DISTINCT
+    CASE
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%metal%' THEN 'metal'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%bois%' THEN 'bois'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%sodium%' THEN 'sodium'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%beton%' THEN 'beton'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%pierre%' THEN 'pierre'
+        WHEN public.unaccent (LOWER(TRIM(materiau))) LIKE '%led%' THEN 'led'
+        ELSE NULL
+    END
+FROM staging.inventaire_mobilier
+WHERE materiau IS NOT NULL
+    AND public.unaccent (LOWER(TRIM(materiau))) LIKE ANY (ARRAY['%metal%', '%bois%', '%sodium%', '%beton%', '%pierre%', '%led%'])
+ON CONFLICT DO NOTHING;
 
---     NULLIF(TRIM(remarques), '') AS remarques,
+INSERT INTO etat_mobilier (id, libelle) VALUES
+    (1, 'bon'),
+    (2, 'use'),
+    (3, 'a remplacer')
+ON CONFLICT (id) DO NOTHING;
 
---     CASE
---         WHEN LOWER(COALESCE(remarques, '')) LIKE '%fermé%' THEN FALSE
---         ELSE TRUE
---     END AS actif
--- FROM staging.fournisseurs_contacts;
+INSERT INTO type_intervention (libelle)
+SELECT DISTINCT
+    CASE
+        WHEN LOWER(TRIM(type_intervention)) IN ('réparation', 'reparation') THEN 'réparation'
+        WHEN LOWER(TRIM(type_intervention)) IN ('réparation électrique', 'reparation electrique') THEN 'réparation électrique'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement ampoule' THEN 'remplacement ampoule'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement complet' THEN 'remplacement complet'
+        WHEN LOWER(TRIM(type_intervention)) = 'redressage mât' THEN 'redressage mât'
+        WHEN LOWER(TRIM(type_intervention)) = 'nettoyage' THEN 'nettoyage'
+        WHEN LOWER(TRIM(type_intervention)) = 'nettoyage tags' THEN 'nettoyage tags'
+        WHEN LOWER(TRIM(type_intervention)) = 'peinture' THEN 'peinture'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement latte' THEN 'remplacement latte'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement couvercle' THEN 'remplacement couvercle'
+        WHEN LOWER(TRIM(type_intervention)) = 'réparation fuite' THEN 'réparation fuite'
+        WHEN LOWER(TRIM(type_intervention)) = 'remise en service' THEN 'remise en service'
+        WHEN LOWER(TRIM(type_intervention)) = 'hivernage' THEN 'hivernage'
+        WHEN LOWER(TRIM(type_intervention)) = 'détartrage' THEN 'détartrage'
+        WHEN LOWER(TRIM(type_intervention)) = 'remplacement pompe' THEN 'remplacement pompe'
+        WHEN LOWER(TRIM(type_intervention)) = 'mise à jour logiciel' THEN 'mise à jour logiciel'
+        ELSE LOWER(TRIM(type_intervention))
+    END
+FROM staging.interventions
+WHERE type_intervention IS NOT NULL
+ON CONFLICT (libelle) DO NOTHING;
 
--- DROP VIEW IF EXISTS staging.v_interventions_nettoyees;
+INSERT INTO urgence_signalement (libelle) VALUES
+    ('urgent'),
+    ('normal')
+ON CONFLICT (libelle) DO NOTHING;
 
--- CREATE VIEW staging.v_interventions_nettoyees AS
--- SELECT
---     CASE
---         WHEN date ~ '^\d{4}-\d{2}-\d{2}$'
---             THEN TO_DATE(date, 'YYYY-MM-DD')
---         WHEN date ~ '^\d{2}\.\d{2}\.\d{4}$'
---             THEN TO_DATE(date, 'DD.MM.YYYY')
---         ELSE NULL
---     END AS date_intervention,
+INSERT INTO statut_signalement (libelle) VALUES
+    ('nouveau'),
+    ('en attente'),
+    ('en cours'),
+    ('fait')
+ON CONFLICT (libelle) DO NOTHING;
 
---     INITCAP(LOWER(TRIM(objet))) AS objet,
+INSERT INTO type_materiel (libelle)
+SELECT DISTINCT LOWER(TRIM(type_materiel))
+FROM staging.fournisseurs_contacts
+WHERE type_materiel IS NOT NULL
+ON CONFLICT (libelle) DO NOTHING;
 
---     CASE
---         WHEN LOWER(TRIM(type_intervention)) IN ('réparation', 'reparation') THEN 'réparation'
---         WHEN LOWER(TRIM(type_intervention)) IN ('réparation électrique', 'reparation electrique') THEN 'réparation électrique'
---         WHEN LOWER(TRIM(type_intervention)) = 'remplacement ampoule' THEN 'remplacement ampoule'
---         WHEN LOWER(TRIM(type_intervention)) = 'remplacement complet' THEN 'remplacement complet'
---         WHEN LOWER(TRIM(type_intervention)) = 'redressage mât' THEN 'redressage mât'
---         WHEN LOWER(TRIM(type_intervention)) = 'nettoyage' THEN 'nettoyage'
---         WHEN LOWER(TRIM(type_intervention)) = 'nettoyage tags' THEN 'nettoyage tags'
---         WHEN LOWER(TRIM(type_intervention)) = 'peinture' THEN 'peinture'
---         WHEN LOWER(TRIM(type_intervention)) = 'remplacement latte' THEN 'remplacement latte'
---         WHEN LOWER(TRIM(type_intervention)) = 'remplacement couvercle' THEN 'remplacement couvercle'
---         WHEN LOWER(TRIM(type_intervention)) = 'réparation fuite' THEN 'réparation fuite'
---         WHEN LOWER(TRIM(type_intervention)) = 'remise en service' THEN 'remise en service'
---         WHEN LOWER(TRIM(type_intervention)) = 'hivernage' THEN 'hivernage'
---         WHEN LOWER(TRIM(type_intervention)) = 'détartrage' THEN 'détartrage'
---         WHEN LOWER(TRIM(type_intervention)) = 'remplacement pompe' THEN 'remplacement pompe'
---         WHEN LOWER(TRIM(type_intervention)) = 'mise à jour logiciel' THEN 'mise à jour logiciel'
---         ELSE LOWER(TRIM(type_intervention))
---     END AS type_intervention_normalise,
+--- Étape 2 : personnes ---
 
---     CASE
---         WHEN LOWER(TRIM(technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin')
---             THEN 'Jean-Marc Bonvin'
---         WHEN LOWER(TRIM(technicien)) IN ('pedro', 'alves pedro', 'p. alves')
---             THEN 'Pedro Alves'
---         WHEN LOWER(TRIM(technicien)) = 'koffi marc'
---             THEN 'Koffi Marc'
---         WHEN LOWER(TRIM(technicien)) = 'stagiaire'
---             THEN 'Stagiaire'
---         ELSE NULL
---     END AS technicien_normalise,
+INSERT INTO personne (nom, prenom)
+SELECT DISTINCT
+    TRIM(SPLIT_PART(
+        CASE
+            WHEN LOWER(TRIM(technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin') THEN 'Jean-Marc Bonvin'
+            WHEN LOWER(TRIM(technicien)) IN ('pedro', 'alves pedro', 'p. alves') THEN 'Pedro Alves'
+            WHEN LOWER(TRIM(technicien)) = 'koffi marc' THEN 'Koffi Marc'
+            WHEN LOWER(TRIM(technicien)) = 'stagiaire' THEN 'Stagiaire'
+            ELSE NULL
+        END
+    , ' ', 2)) AS nom,
+    TRIM(SPLIT_PART(
+        CASE
+            WHEN LOWER(TRIM(technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin') THEN 'Jean-Marc Bonvin'
+            WHEN LOWER(TRIM(technicien)) IN ('pedro', 'alves pedro', 'p. alves') THEN 'Pedro Alves'
+            WHEN LOWER(TRIM(technicien)) = 'koffi marc' THEN 'Koffi Marc'
+            WHEN LOWER(TRIM(technicien)) = 'stagiaire' THEN 'Stagiaire'
+            ELSE NULL
+        END
+    , ' ', 1)) AS prenom
+FROM staging.interventions
+WHERE technicien IS NOT NULL
+    AND LOWER(TRIM(technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin', 'pedro', 'alves pedro', 'p. alves', 'koffi marc', 'stagiaire')
+ON CONFLICT DO NOTHING;
 
---     CASE
---         WHEN LOWER(TRIM(duree)) = '30 min' THEN 30
---         WHEN LOWER(TRIM(duree)) = '1h' THEN 60
---         WHEN LOWER(TRIM(duree)) = '1h30' THEN 90
---         WHEN LOWER(TRIM(duree)) = '2h' THEN 120
---         WHEN LOWER(TRIM(duree)) = '3h' THEN 180
---         WHEN LOWER(TRIM(duree)) = 'une matinée' THEN 240
---         WHEN LOWER(TRIM(duree)) = 'une journée' THEN 480
---         ELSE NULL
---     END AS duree_minutes,
+INSERT INTO personne (nom, telephone, email)
+SELECT DISTINCT
+    NULLIF(TRIM(contact), ''),
+    CASE
+        WHEN telephone IS NULL THEN NULL
+        WHEN TRIM(telephone) = '#ERROR!' THEN NULL
+        ELSE NULLIF(REGEXP_REPLACE(telephone, '[^0-9+]', '', 'g'), '')
+    END,
+    CASE
+        WHEN email IS NULL THEN NULL
+        WHEN NULLIF(TRIM(email), '') IS NULL THEN NULL
+        WHEN LOWER(TRIM(email)) = 'voir site web' THEN NULL
+        WHEN POSITION('@' IN email) > 1 THEN LOWER(TRIM(email))
+        ELSE NULL
+    END
+FROM staging.fournisseurs_contacts
+WHERE contact IS NOT NULL
+ON CONFLICT DO NOTHING;
 
---     CASE
---         WHEN NULLIF(TRIM(cout_materiel), '') IS NULL THEN NULL
---         WHEN LOWER(TRIM(cout_materiel)) IN ('garantie', 'gratuit') THEN 0
---         ELSE NULLIF(REGEXP_REPLACE(cout_materiel, '[^0-9]', '', 'g'), '')::INTEGER
---     END AS cout_materiel_chf,
+--- Étape 3 : techniciens ---
 
---     NULLIF(TRIM(remarques), '') AS remarques
--- FROM staging.interventions;
+INSERT INTO technicien_profession (libelle) VALUES
+    ('technicien de voirie')
+ON CONFLICT (libelle) DO NOTHING;
 
--- DROP VIEW IF EXISTS staging.v_signalements_nettoyes;
+INSERT INTO technicien (fk_personne, fk_technicien_profession)
+SELECT DISTINCT
+    p.id,
+    tp.id
+FROM staging.interventions i
+JOIN personne p
+    ON p.prenom = TRIM(SPLIT_PART(
+        CASE
+            WHEN LOWER(TRIM(i.technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin') THEN 'Jean-Marc Bonvin'
+            WHEN LOWER(TRIM(i.technicien)) IN ('pedro', 'alves pedro', 'p. alves') THEN 'Pedro Alves'
+            WHEN LOWER(TRIM(i.technicien)) = 'koffi marc' THEN 'Koffi Marc'
+            WHEN LOWER(TRIM(i.technicien)) = 'stagiaire' THEN 'Stagiaire'
+            ELSE NULL
+        END
+    , ' ', 1))
+    AND p.nom = TRIM(SPLIT_PART(
+        CASE
+            WHEN LOWER(TRIM(i.technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin') THEN 'Jean-Marc Bonvin'
+            WHEN LOWER(TRIM(i.technicien)) IN ('pedro', 'alves pedro', 'p. alves') THEN 'Pedro Alves'
+            WHEN LOWER(TRIM(i.technicien)) = 'koffi marc' THEN 'Koffi Marc'
+            WHEN LOWER(TRIM(i.technicien)) = 'stagiaire' THEN 'Stagiaire'
+            ELSE NULL
+        END
+    , ' ', 2))
+JOIN technicien_profession tp ON tp.libelle = 'technicien de voirie'
+WHERE i.technicien IS NOT NULL
+ON CONFLICT DO NOTHING;
 
--- CREATE VIEW staging.v_signalements_nettoyes AS
--- SELECT
---     CASE
---         WHEN date ~ '^\d{4}-\d{2}-\d{2}$'
---             THEN TO_DATE(date, 'YYYY-MM-DD')
---         WHEN date ~ '^\d{2}\.\d{2}\.\d{4}$'
---             THEN TO_DATE(date, 'DD.MM.YYYY')
---         ELSE NULL
---     END AS date_signalement,
+--- Étape 4 : inventaire mobilier ---
 
---     NULLIF(TRIM(signale_par), '') AS signale_par,
+INSERT INTO inventaire_mobilier (
+    fk_type_mobilier,
+    fk_materiaux_mobilier,
+    lieu,
+    latitude,
+    longitude,
+    date_installation,
+    fk_etat_mobilier,
+    remarque
+)
+SELECT
+    tm.id,
+    mm.id,
+    INITCAP(LOWER(TRIM(s.lieu))),
+    CASE
+        WHEN NULLIF(TRIM(s.latitude), '') IS NULL THEN NULL
+        WHEN TRIM(s.latitude) ~ '^-?[0-9]+([.,][0-9]+)?$'
+            THEN REPLACE(TRIM(s.latitude), ',', '.')::NUMERIC(9,6)
+        ELSE NULL
+    END,
+    CASE
+        WHEN NULLIF(TRIM(s.longitude), '') IS NULL THEN NULL
+        WHEN TRIM(s.longitude) ~ '^-?[0-9]+([.,][0-9]+)?$'
+            THEN REPLACE(TRIM(s.longitude), ',', '.')::NUMERIC(9,6)
+        ELSE NULL
+    END,
+    CASE
+        WHEN s.date_installation ~ '^\d{4}$'
+            THEN TO_DATE('01.01.' || s.date_installation, 'DD.MM.YYYY')
+        WHEN s.date_installation ~ '^\d{2}\.\d{2}\.\d{4}$'
+            THEN TO_DATE(s.date_installation, 'DD.MM.YYYY')
+        WHEN s.date_installation ~ '^\d{4}-\d{2}-\d{2}$'
+            THEN TO_DATE(s.date_installation, 'YYYY-MM-DD')
+        WHEN s.date_installation ~ '^[a-zA-Zéèêëàâîïôöùûüç]+ \d{4}$' THEN TO_DATE(
+            '01.' || CASE LOWER(split_part(s.date_installation, ' ', 1))
+                WHEN 'janvier' THEN '01' WHEN 'fevrier' THEN '02' WHEN 'février' THEN '02'
+                WHEN 'mars' THEN '03' WHEN 'avril' THEN '04' WHEN 'mai' THEN '05'
+                WHEN 'juin' THEN '06' WHEN 'juillet' THEN '07' WHEN 'aout' THEN '08'
+                WHEN 'août' THEN '08' WHEN 'septembre' THEN '09' WHEN 'octobre' THEN '10'
+                WHEN 'novembre' THEN '11' WHEN 'decembre' THEN '12' WHEN 'décembre' THEN '12'
+            END || '.' || split_part(s.date_installation, ' ', 2), 'DD.MM.YYYY')
+        WHEN s.date_installation ~ '^\d{5}$'
+            THEN DATE '1899-12-30' + s.date_installation::int
+        ELSE NULL
+    END,
+    em.id,
+    NULLIF(TRIM(s.remarques), '')
+FROM staging.inventaire_mobilier s
+LEFT JOIN type_mobilier tm ON tm.libelle = CASE
+    WHEN public.unaccent (LOWER(TRIM(s."type"))) LIKE '%banc%' THEN 'banc'
+    WHEN public.unaccent (LOWER(TRIM(s."type"))) LIKE '%lampadaire%' THEN 'lampadaire'
+    WHEN public.unaccent (LOWER(TRIM(s."type"))) LIKE '%poubelle%' THEN 'poubelle'
+    WHEN public.unaccent (LOWER(TRIM(s."type"))) LIKE '%corbeille%' THEN 'poubelle'
+    ELSE NULL END
+LEFT JOIN materiaux_mobilier mm ON mm.libelle = CASE
+    WHEN public.unaccent (LOWER(TRIM(s.materiau))) LIKE '%metal%' THEN 'metal'
+    WHEN public.unaccent (LOWER(TRIM(s.materiau))) LIKE '%bois%' THEN 'bois'
+    WHEN public.unaccent (LOWER(TRIM(s.materiau))) LIKE '%sodium%' THEN 'sodium'
+    WHEN public.unaccent (LOWER(TRIM(s.materiau))) LIKE '%beton%' THEN 'beton'
+    WHEN public.unaccent (LOWER(TRIM(s.materiau))) LIKE '%pierre%' THEN 'pierre'
+    WHEN public.unaccent (LOWER(TRIM(s.materiau))) LIKE '%led%' THEN 'led'
+    ELSE NULL END
+LEFT JOIN etat_mobilier em ON em.libelle = CASE
+    WHEN public.unaccent (LOWER(TRIM(s.etat))) LIKE '%remplacer%' THEN 'a remplacer'
+    WHEN public.unaccent (LOWER(TRIM(s.etat))) LIKE '%bon%' THEN 'bon'
+    WHEN public.unaccent (LOWER(TRIM(s.etat))) LIKE '%use%' THEN 'use'
+    ELSE NULL END
+WHERE s.type IS NOT NULL;
 
---     INITCAP(LOWER(TRIM(objet))) AS objet,
+--- Étape 5 : interventions ---
 
---     NULLIF(TRIM(description), '') AS description,
+INSERT INTO intervention (
+    date,
+    objet,
+    fk_type_intervention,
+    duree,
+    cout_materiel,
+    remarque,
+    fk_personne
+)
+SELECT
+    CASE
+        WHEN date ~ '^\d{4}$' THEN TO_DATE('01.01.' || date, 'DD.MM.YYYY')
+        WHEN date ~ '^\d{2}\.\d{2}\.\d{4}$' THEN TO_DATE(date, 'DD.MM.YYYY')
+        WHEN date ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(date, 'YYYY-MM-DD')
+        WHEN date ~ '^[a-zA-Zéèêëàâîïôöùûüç]+ \d{4}$' THEN TO_DATE(
+            '01.' || CASE LOWER(split_part(date, ' ', 1))
+                WHEN 'janvier' THEN '01' WHEN 'fevrier' THEN '02' WHEN 'février' THEN '02'
+                WHEN 'mars' THEN '03' WHEN 'avril' THEN '04' WHEN 'mai' THEN '05'
+                WHEN 'juin' THEN '06' WHEN 'juillet' THEN '07' WHEN 'aout' THEN '08'
+                WHEN 'août' THEN '08' WHEN 'septembre' THEN '09' WHEN 'octobre' THEN '10'
+                WHEN 'novembre' THEN '11' WHEN 'decembre' THEN '12' WHEN 'décembre' THEN '12'
+            END || '.' || split_part(date, ' ', 2), 'DD.MM.YYYY')
+        WHEN date ~ '^\d{5}$' THEN DATE '1899-12-30' + date::int
+        ELSE NULL
+    END,
+    INITCAP(LOWER(TRIM(objet))),
+    ti.id,
+    CASE
+        WHEN LOWER(TRIM(duree)) = '30 min' THEN 30
+        WHEN LOWER(TRIM(duree)) = '1h' THEN 60
+        WHEN LOWER(TRIM(duree)) = '1h30' THEN 90
+        WHEN LOWER(TRIM(duree)) = '2h' THEN 120
+        WHEN LOWER(TRIM(duree)) = '3h' THEN 180
+        WHEN LOWER(TRIM(duree)) = 'une matinée' THEN 240
+        WHEN LOWER(TRIM(duree)) = 'une journée' THEN 480
+        ELSE NULL
+    END,
+    CASE
+        WHEN NULLIF(TRIM(cout_materiel), '') IS NULL THEN NULL
+        WHEN LOWER(TRIM(cout_materiel)) IN ('garantie', 'gratuit') THEN 0
+        ELSE NULLIF(REGEXP_REPLACE(cout_materiel, '[^0-9]', '', 'g'), '')::INTEGER
+    END,
+    NULLIF(TRIM(remarques), ''),
+    p.id
+FROM staging.interventions i
+LEFT JOIN type_intervention ti ON ti.libelle = CASE
+    WHEN LOWER(TRIM(i.type_intervention)) IN ('réparation', 'reparation') THEN 'réparation'
+    WHEN LOWER(TRIM(i.type_intervention)) IN ('réparation électrique', 'reparation electrique') THEN 'réparation électrique'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'remplacement ampoule' THEN 'remplacement ampoule'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'remplacement complet' THEN 'remplacement complet'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'redressage mât' THEN 'redressage mât'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'nettoyage' THEN 'nettoyage'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'nettoyage tags' THEN 'nettoyage tags'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'peinture' THEN 'peinture'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'remplacement latte' THEN 'remplacement latte'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'remplacement couvercle' THEN 'remplacement couvercle'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'réparation fuite' THEN 'réparation fuite'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'remise en service' THEN 'remise en service'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'hivernage' THEN 'hivernage'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'détartrage' THEN 'détartrage'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'remplacement pompe' THEN 'remplacement pompe'
+    WHEN LOWER(TRIM(i.type_intervention)) = 'mise à jour logiciel' THEN 'mise à jour logiciel'
+    ELSE LOWER(TRIM(i.type_intervention)) END
+LEFT JOIN personne p
+    ON p.prenom = TRIM(SPLIT_PART(
+        CASE
+            WHEN LOWER(TRIM(i.technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin') THEN 'Jean-Marc Bonvin'
+            WHEN LOWER(TRIM(i.technicien)) IN ('pedro', 'alves pedro', 'p. alves') THEN 'Pedro Alves'
+            WHEN LOWER(TRIM(i.technicien)) = 'koffi marc' THEN 'Koffi Marc'
+            WHEN LOWER(TRIM(i.technicien)) = 'stagiaire' THEN 'Stagiaire'
+            ELSE NULL
+        END
+    , ' ', 1))
+    AND p.nom = TRIM(SPLIT_PART(
+        CASE
+            WHEN LOWER(TRIM(i.technicien)) IN ('jm', 'jean-marc', 'jean-marc bonvin') THEN 'Jean-Marc Bonvin'
+            WHEN LOWER(TRIM(i.technicien)) IN ('pedro', 'alves pedro', 'p. alves') THEN 'Pedro Alves'
+            WHEN LOWER(TRIM(i.technicien)) = 'koffi marc' THEN 'Koffi Marc'
+            WHEN LOWER(TRIM(i.technicien)) = 'stagiaire' THEN 'Stagiaire'
+            ELSE NULL
+        END
+    , ' ', 2))
+WHERE i.date IS NOT NULL;
 
---     CASE
---         WHEN LOWER(TRIM(urgence)) = 'urgent' THEN 'urgent'
---         WHEN LOWER(TRIM(urgence)) = 'normal' THEN 'normal'
---         WHEN NULLIF(TRIM(urgence), '') IS NULL THEN 'normal'
---         ELSE NULL
---     END AS urgence_normalisee,
+--- Étape 6 : fournisseurs ---
 
---     CASE
---         WHEN LOWER(TRIM(statut)) IN ('fait', 'en attente', 'en cours')
---             THEN LOWER(TRIM(statut))
---         WHEN NULLIF(TRIM(statut), '') IS NULL
---             THEN 'nouveau'
---         ELSE NULL
---     END AS statut_normalise
--- FROM staging.signalements;
+INSERT INTO fournisseur (
+    entreprise,
+    fk_type_materiel,
+    remarque,
+    fk_personne
+)
+SELECT
+    INITCAP(TRIM(f.entreprise)),
+    tm.id,
+    NULLIF(TRIM(f.remarques), ''),
+    p.id
+FROM staging.fournisseurs_contacts f
+LEFT JOIN type_materiel tm
+    ON tm.libelle = LOWER(TRIM(f.type_materiel))
+LEFT JOIN personne p
+    ON p.nom = NULLIF(TRIM(f.contact), '')
+WHERE f.entreprise IS NOT NULL;
 
--- SELECT * FROM staging.v_inventaire_mobilier_nettoye LIMIT 20;
--- SELECT * FROM staging.v_fournisseurs_contacts_nettoyes LIMIT 20;
--- SELECT * FROM staging.v_interventions_nettoyees LIMIT 20;
--- SELECT * FROM staging.v_signalements_nettoyes LIMIT 20;
+--- Étape 7 : signalements ---
 
--- SELECT COUNT(*) FROM staging.inventaire_mobilier;
--- SELECT COUNT(*) FROM staging.v_inventaire_mobilier_nettoye;
+INSERT INTO signalement (
+    date,
+    objet,
+    description,
+    fk_urgence_signalement,
+    fk_statut_signalement
+)
+SELECT
+    CASE
+        WHEN date ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(date, 'YYYY-MM-DD')
+        WHEN date ~ '^\d{2}\.\d{2}\.\d{4}$' THEN TO_DATE(date, 'DD.MM.YYYY')
+        ELSE NULL
+    END,
+    INITCAP(LOWER(TRIM(objet))),
+    NULLIF(TRIM(description), ''),
+    u.id,
+    s.id
+FROM staging.signalements sg
+LEFT JOIN urgence_signalement u ON u.libelle = CASE
+    WHEN LOWER(TRIM(sg.urgence)) = 'urgent' THEN 'urgent'
+    WHEN LOWER(TRIM(sg.urgence)) = 'normal' THEN 'normal'
+    WHEN NULLIF(TRIM(sg.urgence), '') IS NULL THEN 'normal'
+    ELSE NULL END
+LEFT JOIN statut_signalement s ON s.libelle = CASE
+    WHEN LOWER(TRIM(sg.statut)) = 'fait' THEN 'fait'
+    WHEN LOWER(TRIM(sg.statut)) = 'en attente' THEN 'en attente'
+    WHEN LOWER(TRIM(sg.statut)) = 'en cours' THEN 'en cours'
+    WHEN NULLIF(TRIM(sg.statut), '') IS NULL THEN 'nouveau'
+    ELSE NULL END
+WHERE sg.date IS NOT NULL;
 
--- SELECT COUNT(*) FROM staging.interventions;
--- SELECT COUNT(*) FROM staging.v_interventions_nettoyees;
 
--- SELECT COUNT(*) FROM staging.signalements;
--- SELECT COUNT(*) FROM staging.v_signalements_nettoyes;
+-- ============================================================
+-- VÉRIFICATIONS FINALES
+-- ============================================================
 
--- SELECT COUNT(*) FROM staging.fournisseurs_contacts;
--- SELECT COUNT(*) FROM staging.v_fournisseurs_contacts_nettoyes;
+SELECT COUNT(*) FROM staging.inventaire_mobilier;
+SELECT COUNT(*) FROM inventaire_mobilier;    -- ~120
 
--- SELECT LOWER(TRIM(id)) AS id_norm, COUNT(*)
--- FROM staging.inventaire_mobilier
--- GROUP BY LOWER(TRIM(id))
--- HAVING COUNT(*) > 1;
+SELECT COUNT(*) FROM staging.interventions;
+SELECT COUNT(*) FROM intervention;           -- ~150
 
--- SELECT date_installation
--- FROM staging.inventaire_mobilier
--- WHERE date_installation IS NOT NULL
---   AND TRIM(date_installation) <> ''
---   AND date_installation NOT IN (
---       SELECT TO_CHAR(date_installation_normalisee, 'YYYY-MM-DD')
---       FROM staging.v_inventaire_mobilier_nettoye
---       WHERE date_installation_normalisee IS NOT NULL
---   );
+SELECT COUNT(*) FROM staging.fournisseurs_contacts;
+SELECT COUNT(*) FROM fournisseur;            -- ~14
+
+SELECT COUNT(*) FROM staging.signalements;
+SELECT COUNT(*) FROM signalement;            -- ~200
